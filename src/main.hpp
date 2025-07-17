@@ -17,8 +17,8 @@
 #define WHITE "\033[1;97m"
 #define OFF "\033[0m"
 
-#define OSRM_SERVER "http://router.project-osrm.org"
-#define OPENTOPODATA_SERVER "https://api.opentopodata.org"
+#define OSRM_SERVER "http://localhost:5000"
+#define OPENTOPODATA_SERVER "http://localhost:5001"
 
 #define STR_NOT_INIT ""
 #define INT_NOT_INIT 7

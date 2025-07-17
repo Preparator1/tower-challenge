@@ -124,22 +124,22 @@ server-build:
 	OTD_DIR="$(MAKE_DIR)/server/opentopodata"; \
 	mkdir -p "$$DATA_DIR"; \
 	cd "$$DATA_DIR"; \
-	if [ ! -f "$$DATA_DIR/$(OSM_FILE).pbf" ]; then \
+	if [ ! -f "$(OSM_FILE).pbf" ]; then \
 		printf "${YELLOW}[INFO] Downloading OSM data...\n${OFF}"; \
 		wget "$(OSM_URL)"; \
 		printf "${GREEN}[INFO] OSM data has been downloaded...\n${OFF}"; \
 	fi; \
-	if [ ! -f "$$DATA_DIR/$(OSRM_FILE)" ]; then \
+	if [ ! -f "$(OSRM_FILE)" ]; then \
 		printf "${YELLOW}[INFO] Running osrm-extract...\n${OFF}"; \
-		sudo docker run -t -v "$$DATA_DIR:/data" $(OSRM_IMAGE) osrm-extract -p $(PROFILE) /data/$(OSRM_FILE).pbf; \
+		sudo docker run -t -v "$$DATA_DIR:/data" $(OSRM_IMAGE) osrm-extract -p $(PROFILE) /data/$(OSM_FILE).pbf; \
 		printf "${GREEN}[INFO] osrm-extraction run has been successful!\n${OFF}"; \
 	fi; \
-	if [ ! -f "$$DATA_DIR/$(OSRM_FILE).partition" ]; then \
+	if [ ! -f "$(OSRM_FILE).partition" ]; then \
 		printf "${YELLOW}[INFO] Running osrm-partition...\n${OFF}"; \
 		sudo docker run -t -v "$$DATA_DIR:/data" $(OSRM_IMAGE) osrm-partition /data/$(OSRM_FILE); \
 		printf "${GREEN}[INFO] osrm-partition run has been successful!\n${OFF}"; \
 	fi; \
-	if [ ! -f "$$DATA_DIR/$(OSRM_FILE).datasource_names" ]; then \
+	if [ ! -f "$(OSRM_FILE).datasource_names" ]; then \
 		printf "${YELLOW}[INFO] Running osrm-customize...\n${OFF}"; \
 		sudo docker run -t -v "$$DATA_DIR:/data" $(OSRM_IMAGE) osrm-customize /data/$(OSRM_FILE); \
 		printf "${GREEN}[INFO] osrm-customize run has been successful!\n${OFF}"; \
