@@ -14,7 +14,7 @@ NAME = towers
 SRC_PREFIX = $(MAKE_DIR)/src/
 O_PREFIX = $(SRC_PREFIX).o_files/
 
-SRC = main.cpp extractor.cpp requests.cpp parser.cpp preprocess.cpp
+SRC = main.cpp extractor.cpp requests.cpp parser.cpp preprocess.cpp save.cpp visual.cpp greedy.cpp refine.cpp
 HEADERS = main.hpp
 OBJ = $(addprefix $(O_PREFIX), $(SRC:.cpp=.o))
 
@@ -42,7 +42,7 @@ debug: build
 
 profiling: CFLAGS += -pg
 profiling: LDFLAGS += -pg
-profiling: all
+profiling: build
 
 install:
 	@printf "${YELLOW}[INFO] Checking Docker installation...\n${OFF}"
@@ -116,10 +116,13 @@ OSM_URL=https://download.geofabrik.de/europe/czech-republic-latest.osm.pbf
 OSM_FILE=czech-republic-latest.osm
 OSRM_FILE=czech-republic-latest.osrm
 OSRM_IMAGE=osrm/osrm-backend
+OTD_GIT_URL=https://github.com/ajnisbet/opentopodata.git
+OTD_MAP_URL=https://files.gpxz.io/eudem_buffered.zip
 PROFILE=/opt/foot.lua
 
 server-build:
 	@printf "${YELLOW}[INFO] Starting server build...\n${OFF}"; \
+	SERVER_DIR="$(MAKE_DIR)/server"; \
 	DATA_DIR="$(MAKE_DIR)/server/data"; \
 	OTD_DIR="$(MAKE_DIR)/server/opentopodata"; \
 	mkdir -p "$$DATA_DIR"; \
@@ -147,14 +150,37 @@ server-build:
 	mkdir -p "$$OTD_DIR"; \
 	cd "$$OTD_DIR"; \
 	if [ ! -d ".git" ]; then \
-		printf "${YELLOW}[INFO] Cloning OpenTopodata repository...\n${OFF}"; \
-		git clone https://github.com/ajnisbet/opentopodata.git .; \
-		printf "${GREEN}[INFO] OpenTopodata repository has been cloned!\n${OFF}"; \
+		printf "${YELLOW}[INFO] Cloning OpenTopoData repository...\n${OFF}"; \
+		git clone $(OTD_GIT_URL) .; \
+		printf "${GREEN}[INFO] OpenTopoData repository has been cloned!\n${OFF}"; \
 	fi; \
+	if [ ! -f "config.yaml" ]; then \
+		printf "${YELLOW}[INFO] Creating OpenTopoData config...\n${OFF}"; \
+		touch config.yaml; \
+		printf "max_locations_per_request: 100\n" 		>> config.yaml; \
+		printf "access_control_allow_origin: \"*\"\n" 	>> config.yaml; \
+		printf "datasets:\n" 							>> config.yaml; \
+		printf -- "- name: eudem25m\n" 					>> config.yaml; \
+		printf "  path: data/eudem\n" 					>> config.yaml; \
+		printf "  filename_epsg: 3035\n" 				>> config.yaml; \
+		printf "  filename_tile_size: 1000000\n" 		>> config.yaml; \
+		printf "${GREEN}[INFO] OpenTopoData config has been created!\n${OFF}"; \
+	fi; \
+	mkdir -p "data"; \
+	cd "data"; \
+	if [ ! -d $$OTD_DIR/data/eudem ] || [ -z "$$(find $$OTD_DIR/data/eudem -mindepth 1 -print -quit)" ]; then \
+		printf "${YELLOW}[INFO] Downloading EU-DEM map...\n${OFF}"; \
+		wget "$(OTD_MAP_URL)"; \
+		unzip eudem_buffered.zip; \
+		rm eudem_buffered.zip; \
+		rm eudem/README.txt; \
+		printf "${GREEN}[INFO] EU-DEM map has been downloaded!\n${OFF}"; \
+	fi; \
+	cd "$$SERVER_DIR"; \
 	sudo docker compose build; \
 	printf "${GREEN}[INFO] Server has been built!\n${OFF}"
 
-server-run:
+server-start:
 	@printf "${YELLOW}[INFO] Running server..\n${OFF}."; \
 	cd "$(MAKE_DIR)/server"; \
 	sudo docker compose up -d; \
